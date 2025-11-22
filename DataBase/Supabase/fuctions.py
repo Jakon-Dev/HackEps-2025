@@ -147,6 +147,181 @@ def download_table_csv(table: str, filepath: str):
 
     return filepath
 
+# ==========================
+#   UPLOAD TABLE
+# ==========================
+
+def detect_column_type(values):
+    """
+    Recibe una lista de valores de una columna y devuelve un tipo SQL:
+    - integer
+    - float
+    - boolean
+    - text
+    """
+    has_float = False
+    has_text = False
+
+    for v in values:
+        if v is None or v == "":
+            continue
+
+        v_lower = str(v).lower()
+
+        if v_lower in ("true", "false"):
+            continue  # boolean
+
+        # integer
+        if v.isdigit() or (v.startswith("-") and v[1:].isdigit()):
+            continue
+
+        # float
+        try:
+            float(v)
+            has_float = True
+            continue
+        except:
+            pass
+
+        has_text = True
+        break
+
+    if has_text:
+        return "text"
+
+    if has_float:
+        return "float"
+
+    # boolean si todos son true/false o vacío
+    if all((str(v).lower() in ("true", "false", "") for v in values)):
+        return "boolean"
+
+    return "integer"
+
+
+def progress_bar(current, total, bar_length=40):
+    ratio = current / total
+    filled = int(bar_length * ratio)
+    bar = "#" * filled + "-" * (bar_length - filled)
+    print(f"\r[{bar}] {int(ratio * 100)}%", end="")
+
+def upload_csv_to_supabase():
+    from pathlib import Path
+    import csv
+
+    # 1. Encontrar root (donde está .env)
+    project_root = ENV_PATH.parent
+    print(f"Buscando CSV en: {project_root}")
+
+    csv_files = list(project_root.rglob("*.csv"))
+    if not csv_files:
+        print("No se encontraron archivos CSV.")
+        return
+
+    # 2. Mostrar lista
+    print("CSV encontrados:")
+    for i, f in enumerate(csv_files, start=1):
+        print(f"{i}. {f.relative_to(project_root)}")
+
+    # 3. Pedir selección
+    while True:
+        try:
+            choice = int(input("Selecciona un CSV por número: "))
+            if 1 <= choice <= len(csv_files):
+                break
+        except:
+            pass
+        print("Número inválido.")
+
+    csv_path = csv_files[choice - 1]
+    table_name = csv_path.stem.lower().replace("-", "_").replace(" ", "_")
+
+    print(f"Archivo seleccionado: {csv_path}")
+    print(f"Nombre asignado de tabla: {table_name}")
+
+    # 4. Leer datos
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    if not rows:
+        print("El CSV está vacío.")
+        return
+
+    columns = reader.fieldnames
+    print(f"Columnas detectadas: {columns}")
+
+    # 5. Autodetección de tipos
+    print("Detectando tipos de columnas:")
+    col_values = {col: [] for col in columns}
+
+    for row in rows:
+        for col in columns:
+            col_values[col].append(row[col])
+
+    column_types = {col: detect_column_type(col_values[col]) for col in columns}
+
+    for c, t in column_types.items():
+        print(f"  {c}: {t}")
+
+    # Convertir tipos Python->SQL
+    sql_types_map = {
+        "integer": "int",
+        "float": "float8",
+        "boolean": "boolean",
+        "text": "text",
+    }
+
+    col_sql = {c: sql_types_map[column_types[c]] for c in columns}
+
+    # 6. Verificar si tabla existe
+    try:
+        existing = supabase.table("pg_tables").select("tablename").execute()
+        exists = any(t["tablename"] == table_name for t in existing.data)
+    except:
+        exists = False
+
+    if exists:
+        print(f"La tabla '{table_name}' ya existe.")
+        print("1. Reemplazar tabla")
+        print("2. Crear nueva con sufijo numérico")
+        option = input("Elige opción (1 o 2): ")
+
+        if option == "1":
+            delete_table(table_name)
+            print(f"Tabla '{table_name}' eliminada.")
+        else:
+            i = 1
+            new_name = f"{table_name}_{i}"
+            while any(t["tablename"] == new_name for t in existing.data):
+                i += 1
+                new_name = f"{table_name}_{i}"
+            table_name = new_name
+            print(f"Usando nombre alternativo: {table_name}")
+
+    # 7. Crear tabla
+    print("Creando tabla...")
+    create_table(table_name, col_sql)
+
+    # 8. Subir datos con barra de progreso
+    print("Subiendo datos...")
+
+    batch = []
+    total = len(rows)
+    for i, row in enumerate(rows, start=1):
+        batch.append(row)
+
+        # enviar cada 500 para evitar overload
+        if len(batch) >= 500:
+            insert_rows(table_name, batch)
+            batch = []
+        progress_bar(i, total)
+
+    if batch:
+        insert_rows(table_name, batch)
+
+    print("\nCarga completada.")
+
 
 # ==========================
 #   TEST (opcional)
