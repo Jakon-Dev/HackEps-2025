@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - LA Finder</title>
+    
+    <!-- Fuentes e Iconos Modernos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            padding-bottom: 60px;
+        }
+
+        /* Header */
+        .results-header {
+            padding: 40px 0;
+            text-align: center;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 40px;
+        }
+        
+        .results-header h2 { font-weight: 700; color: var(--text-dark); letter-spacing: -0.5px; }
+        .results-header p { color: var(--secondary-color); }
+
+        /* Tarjetas de Resultados */
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            height: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+
+        /* Imagen */
+        .card-img-wrapper {
+            position: relative;
+            height: 220px;
+        }
+
+        .card-img-top {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Badge de Match % */
+        .match-badge {
+            position: absolute;
+            bottom: -20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border: 4px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Cuerpo de la tarjeta */
+        .card-body { padding: 25px 25px 20px; padding-top: 30px; }
+
+        .card-title { font-weight: 700; margin-bottom: 15px; font-size: 1.5rem; }
+
+        /* Justificación */
+        .verdict-box {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+
+        /* Barras de progreso */
+        .stat-row { margin-bottom: 10px; }
+        .stat-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .progress { height: 8px; border-radius: 4px; background-color: #f1f5f9; }
+        .progress-bar { border-radius: 4px; }
+
+        /* Tags */
+        .badge-tag {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        .badge-tag.nature { background: #dcfce7; color: #166534; }
+        .badge-tag.accessible { background: #dbeafe; color: #1e40af; }
+
+        /* Botón Volver */
+        .btn-back {
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+            font-weight: 600;
+            padding: 10px 30px;
+            border-radius: 30px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover {
+            background: var(--secondary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="results-header">
+        <div class="container">
+            <h2>Resultados del Análisis</h2>
+            <p>Hemos encontrado los barrios que mejor encajan con tu perfil.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row g-4">
+            {% for item in resultados %}
+            <div class="col-lg-4 col-md-6">
+                <div class="result-card">
+                    <!-- Imagen y Score -->
+                    <div class="card-img-wrapper">
+                        <img src="{{ item.barrio.img }}" class="card-img-top" alt="{{ item.barrio.nombre }}">
+                        <div class="match-badge" style="background-color: {% if item.match_ratio > 80 %}#10b981{% elif item.match_ratio > 50 %}#3b82f6{% else %}#f59e0b{% endif %};">
+                            {{ item.match_ratio }}%
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <h3 class="card-title">{{ item.barrio.nombre }}</h3>
+                        
+                        <!-- Tags -->
+                        <div class="mb-3">
+                            {% if item.barrio.tiene_naturaleza %}
+                                <span class="badge-tag nature"><i class="fas fa-tree"></i> Naturaleza</span>
+                            {% endif %}
+                            {% if item.barrio.es_accesible %}
+                                <span class="badge-tag accessible"><i class="fas fa-wheelchair"></i> Accesible</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Justificación -->
+                        <div class="verdict-box">
+                            <i class="fas fa-info-circle me-1"></i> <strong>Análisis:</strong><br>
+                            {{ item.justificacion }}
+                        </div>
+
+                        <!-- Estadísticas -->
+                        <div class="stats-container">
+                            <!-- Seguridad -->
+                            <div class="stat-row">
+                                <div class="stat-label">
+                                    <span><i class="fas fa-shield-alt text-secondary"></i> Seguridad</span>
+                                    <span>{{ item.barrio.scores.seguridad }}/10</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-danger" style="width: {{ item.barrio.scores.seguridad }}0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Cultura -->
+                            <div class="stat-row">
+                                <div class="stat-label">
+                                    <span><i class="fas fa-theater-masks text-secondary"></i> Cultura</span>
+                                    <span>{{ item.barrio.scores.cultura }}/10</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" style="width: {{ item.barrio.scores.cultura }}0%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bici -->
+                            <div class="stat-row">
+                                <div class="stat-label">
+                                    <span><i class="fas fa-bicycle text-secondary"></i> Bici Friendly</span>
+                                    <span>{{ item.barrio.scores.bici }}/10</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width: {{ item.barrio.scores.bici }}0%"></div>
+                                </div>
+                            </div>
+
+                             <!-- Vida Nocturna -->
+                             <div class="stat-row">
+                                <div class="stat-label">
+                                    <span><i class="fas fa-glass-cheers text-secondary"></i> Ocio Nocturno</span>
+                                    <span>{{ item.barrio.scores.vida_nocturna }}/10</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-primary" style="width: {{ item.barrio.scores.vida_nocturna }}0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <div class="text-muted">
+                    <i class="fas fa-search fa-3x mb-3"></i>
+                    <h4>No hemos encontrado coincidencias.</h4>
+                    <p>Tus filtros son muy estrictos. Prueba a relajar la exigencia de "Accesibilidad" o "Presupuesto".</p>
+                    <a href="/" class="btn btn-primary mt-3">Ajustar Filtros</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="/" class="btn btn-back"><i class="fas fa-arrow-left me-2"></i> Volver al Buscador</a>
+        </div>
+    </div>
+</body>
+</html>

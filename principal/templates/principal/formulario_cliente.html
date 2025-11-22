@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Barrios - LA Finder</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --accent-color: #3b82f6;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            padding-bottom: 60px;
+        }
+
+        .header-section {
+            background: #fff;
+            padding: 40px 0;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        h1 { font-weight: 700; color: #0f172a; letter-spacing: -0.5px; }
+        h4 { font-weight: 600; font-size: 1.1rem; color: #334155; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+
+        /* Modern Cards */
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            height: 100%;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        /* Sliders */
+        input[type=range] {
+            accent-color: var(--primary-color);
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .range-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .badge-value {
+            background-color: #eff6ff;
+            color: var(--primary-color);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .form-select { border-radius: 8px; padding: 10px; }
+        .btn-modern {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 16px 48px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s;
+        }
+        .btn-modern:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+        .helper-text { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <header class="header-section">
+        <div class="container text-center">
+            <h1><i class="fas fa-map-marked-alt text-primary"></i> L.A. Neighborhood Finder</h1>
+            <p class="text-secondary mt-2">Configura tus preferencias para encontrar el barrio perfecto.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <form method="POST" action="">
+            {% csrf_token %}
+
+            <div class="row g-4">
+                
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <h4><i class="fas fa-chart-line text-success"></i> Demografía y Economía</h4>
+                        <p class="helper-text mb-4">Poder adquisitivo y entorno poblacional.</p>
+
+                        <div class="mb-4">
+                            <label class="range-label">Presupuesto / Nivel Económico <span id="val-presupuesto" class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="1" max="10" value="5" name="presupuesto" oninput="updateVal(this, 'val-presupuesto')">
+                            <div class="d-flex justify-content-between helper-text">
+                                <span>Bajo</span>
+                                <span>Alto (Lujo)</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="range-label">Densidad de Población</label>
+                            <select class="form-select" name="densidad">
+                                <option value="baja">Baja (Tranquilidad / Residencial)</option>
+                                <option value="media" selected>Media (Equilibrado)</option>
+                                <option value="alta">Alta (Urbano / Mucha actividad)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <h4><i class="fas fa-shield-alt text-danger"></i> Seguridad y Privacidad</h4>
+                        <p class="helper-text mb-4">Criminalidad (Data LAPD) y aislamiento.</p>
+
+                        <div class="mb-4">
+                            <label class="range-label">Prioridad de Seguridad <span id="val-seguridad" class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="seguridad" oninput="updateVal(this, 'val-seguridad')">
+                        </div>
+                        
+                         <div class="form-check form-switch mt-3">
+                            <input class="form-check-input" type="checkbox" id="privacidad" name="privacidad">
+                            <label class="form-check-label fw-bold" for="privacidad">
+                                🔒 Priorizar Privacidad (Estilo Cersei)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <h4><i class="fas fa-glass-cheers text-warning"></i> Estilo de Vida</h4>
+                        <p class="helper-text mb-4">Ocio, cultura y ambiente.</p>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="range-label">Vida Nocturna <span id="val-fiesta" class="badge-value">5</span></label>
+                                <input type="range" class="form-range" min="0" max="10" value="5" name="vida_nocturna" oninput="updateVal(this, 'val-fiesta')">
+                                <div class="helper-text">Bares y Clubs</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="range-label">Oferta Cultural <span id="val-cultura" class="badge-value">5</span></label>
+                                <input type="range" class="form-range" min="0" max="10" value="5" name="cultura" oninput="updateVal(this, 'val-cultura')">
+                                <div class="helper-text">Museos y Teatro</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 pt-2 border-top">
+                            <label class="range-label">Nivel de Silencio <span id="val-silencio" class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="silencio" oninput="updateVal(this, 'val-silencio')">
+                        </div>
+
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="naturaleza" name="naturaleza">
+                            <label class="form-check-label fw-bold" for="naturaleza">
+                                🌲 Zonas Verdes / Mascotas
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <h4><i class="fas fa-subway text-info"></i> Movilidad</h4>
+                        <p class="helper-text mb-4">Cómo desplazarse por la zona.</p>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="range-label">Walkability (A pie) <span id="val-pie" class="badge-value">5</span></label>
+                                <input type="range" class="form-range" min="0" max="10" value="5" name="caminabilidad" oninput="updateVal(this, 'val-pie')">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="range-label">Transporte Público <span id="val-trans" class="badge-value">5</span></label>
+                                <input type="range" class="form-range" min="0" max="10" value="5" name="transporte" oninput="updateVal(this, 'val-trans')">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="range-label"><i class="fas fa-bicycle text-secondary"></i> Infraestructura Ciclista (Bici) <span id="val-bici" class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="bici" oninput="updateVal(this, 'val-bici')">
+                        </div>
+
+                        <div class="alert alert-light border mt-2 d-flex align-items-center">
+                            <input class="form-check-input me-3" type="checkbox" id="accesibilidad" name="accesibilidad" style="width: 20px; height: 20px;">
+                            <div>
+                                <label class="form-check-label fw-bold text-dark" for="accesibilidad">
+                                    ♿ Accesibilidad Universal (Bran Stark)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="text-center mt-5">
+                <button type="submit" class="btn btn-modern">
+                    <i class="fas fa-search me-2"></i> Calcular Recomendación
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateVal(slider, outputId) {
+            document.getElementById(outputId).innerText = slider.value;
+        }
+    </script>
+</body>
+</html>
