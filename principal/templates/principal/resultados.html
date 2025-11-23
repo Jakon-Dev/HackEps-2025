@@ -1,15 +1,18 @@
+{% load static custom_filters %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados - LA Finder</title>
-    
+
     <!-- Fuentes e Iconos Modernos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
     <style>
         :root {
             --primary-color: #2563eb;
@@ -34,31 +37,124 @@
             border-bottom: 1px solid #e2e8f0;
             margin-bottom: 40px;
         }
-        
-        .results-header h2 { font-weight: 700; color: var(--text-dark); letter-spacing: -0.5px; }
-        .results-header p { color: var(--secondary-color); }
+
+        .results-header h2 {
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+        }
+
+        .results-header p {
+            color: var(--secondary-color);
+        }
 
         /* Tarjetas de Resultados */
         .result-card {
             background: var(--card-bg);
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
             height: 100%;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
         }
 
         .result-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            border-color: #cbd5e1;
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary-light);
         }
 
-        /* Imagen */
+        .result-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .result-card {
+            cursor: pointer;
+        }
+
+        /* Modal de Detalles */
+        .modal-details {
+            max-width: 800px;
+        }
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+            width: 50px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .metric-content {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            color: var(--secondary-color);
+            font-size: 0.95rem;
+        }
+
+        .metric-percentage {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        /* Imagen / Mapa */
         .card-img-wrapper {
             position: relative;
             height: 220px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            overflow: hidden;
         }
 
         .card-img-top {
@@ -67,43 +163,84 @@
             object-fit: cover;
         }
 
+        .neighborhood-map {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            object-fit: cover;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 20px;
+        }
+
         /* Badge de Match % */
         .match-badge {
             position: absolute;
             bottom: -20px;
             right: 20px;
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
             color: white;
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            border: 4px solid white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: 800;
+            font-size: 1.25rem;
+            border: 5px solid white;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 0 0 4px rgba(37, 99, 235, 0.1);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover .match-badge {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), 0 0 0 6px rgba(37, 99, 235, 0.15);
         }
 
         /* Cuerpo de la tarjeta */
-        .card-body { padding: 25px 25px 20px; padding-top: 30px; }
+        .card-body {
+            padding: 25px 25px 20px;
+            padding-top: 30px;
+        }
 
-        .card-title { font-weight: 700; margin-bottom: 15px; font-size: 1.5rem; }
+        .card-title {
+            font-weight: 700;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
 
         /* Justificación */
         .verdict-box {
-            background-color: #eff6ff;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
             border-left: 4px solid var(--primary-color);
-            padding: 15px;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 0.95rem;
             color: #1e3a8a;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            line-height: 1.7;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         /* Barras de progreso */
-        .stat-row { margin-bottom: 10px; }
+        .stat-row {
+            margin-bottom: 10px;
+        }
+
         .stat-label {
             font-size: 0.85rem;
             font-weight: 600;
@@ -112,8 +249,57 @@
             justify-content: space-between;
             margin-bottom: 4px;
         }
-        .progress { height: 8px; border-radius: 4px; background-color: #f1f5f9; }
-        .progress-bar { border-radius: 4px; }
+
+        .progress {
+            height: 10px;
+            border-radius: 10px;
+            background-color: #f1f5f9;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+            transition: width 0.6s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Métricas adicionales desplegables */
+        .additional-stats {
+            animation: fadeIn 0.3s ease-in;
+            margin-top: 10px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-toggle-stats {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent !important;
+            border: 1px solid var(--primary-color) !important;
+            color: var(--primary-color) !important;
+            padding: 6px 20px !important;
+            border-radius: 20px !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+        }
+
+        .btn-toggle-stats:hover {
+            background: var(--primary-color) !important;
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+        }
 
         /* Tags */
         .badge-tag {
@@ -124,9 +310,19 @@
             font-size: 0.75rem;
             font-weight: 600;
             margin-right: 5px;
+            margin-bottom: 5px;
+            display: inline-block;
         }
-        .badge-tag.nature { background: #dcfce7; color: #166534; }
-        .badge-tag.accessible { background: #dbeafe; color: #1e40af; }
+
+        .badge-tag.nature {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-tag.accessible {
+            background: #dbeafe;
+            color: #1e40af;
+        }
 
         /* Botón Volver */
         .btn-back {
@@ -136,47 +332,79 @@
             padding: 10px 30px;
             border-radius: 30px;
             transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
+
         .btn-back:hover {
             background: var(--secondary-color);
             color: white;
+            text-decoration: none;
         }
     </style>
 </head>
+
 <body>
 
     <!-- Header -->
     <div class="results-header">
         <div class="container">
-            <h2>Resultados del Análisis</h2>
-            <p>Hemos encontrado los barrios que mejor encajan con tu perfil.</p>
+            <h2 class="text-gradient">Resultados del Análisis</h2>
+            <p style="font-size: 1.125rem;">Hemos encontrado los barrios que mejor encajan con tu perfil personalizado.
+            </p>
         </div>
     </div>
 
     <div class="container">
         <div class="row g-4">
+            {% if resultados %}
             {% for item in resultados %}
             <div class="col-lg-4 col-md-6">
-                <div class="result-card">
-                    <!-- Imagen y Score -->
+                <div class="result-card" onclick="showBarrioDetails('{{ item.barrio.nombre }}')"
+                    data-barrio-name="{{ item.barrio.nombre }}"
+                    data-barrio-metrics="{{ item.barrio.metrics_json|default:'{}'|safe }}">
+                    <!-- Mapa y Score -->
                     <div class="card-img-wrapper">
-                        <img src="{{ item.barrio.img }}" class="card-img-top" alt="{{ item.barrio.nombre }}">
-                        <div class="match-badge" style="background-color: {% if item.match_ratio > 80 %}#10b981{% elif item.match_ratio > 50 %}#3b82f6{% else %}#f59e0b{% endif %};">
+                        {% if item.barrio.polygon_path and item.barrio.visible and api_key %}
+                            {# Opción 1: Polígono con Viewport (bounds) #}
+                            <img class="neighborhood-map"
+                                src="https://maps.googleapis.com/maps/api/staticmap?size=640x220&maptype=roadmap&path=color:0x2563eb|weight:3|fillcolor:0x2563eb33|{{ item.barrio.polygon_path }}&visible={{ item.barrio.visible }}&key={{ api_key }}"
+                                alt="Mapa de {{ item.barrio.nombre }}"
+                                onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'220\'%3E%3Crect fill=\'%23667eea\' width=\'640\' height=\'220\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'white\' font-size=\'18\' font-weight=\'bold\'%3E{{ item.barrio.nombre }}%3C/text%3E%3C/svg%3E';">
+                        
+                        {% elif item.barrio.polygon_path and item.barrio.center_lat and item.barrio.center_lng and api_key %}
+                            {# Opción 2: Polígono con Centro (sin bounds) - ESTA ERA LA QUE FALLABA #}
+                            <img class="neighborhood-map"
+                                src="https://maps.googleapis.com/maps/api/staticmap?size=640x220&maptype=roadmap&path=color:0x2563eb|weight:3|fillcolor:0x2563eb33|{{ item.barrio.polygon_path }}&center={{ item.barrio.center_lat }},{{ item.barrio.center_lng }}&zoom=13&key={{ api_key }}"
+                                alt="Mapa de {{ item.barrio.nombre }}"
+                                onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'220\'%3E%3Crect fill=\'%23667eea\' width=\'640\' height=\'220\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'white\' font-size=\'18\' font-weight=\'bold\'%3E{{ item.barrio.nombre }}%3C/text%3E%3C/svg%3E';">
+                        
+                        {% elif item.barrio.center_lat and item.barrio.center_lng and api_key %}
+                            {# Opción 3: Solo Centro (sin polígono) #}
+                            <img class="neighborhood-map"
+                                src="https://maps.googleapis.com/maps/api/staticmap?size=640x220&maptype=roadmap&center={{ item.barrio.center_lat }},{{ item.barrio.center_lng }}&zoom=13&key={{ api_key }}"
+                                alt="Mapa de {{ item.barrio.nombre }}"
+                                onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'220\'%3E%3Crect fill=\'%23667eea\' width=\'640\' height=\'220\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'white\' font-size=\'18\' font-weight=\'bold\'%3E{{ item.barrio.nombre }}%3C/text%3E%3C/svg%3E';">
+                        
+                        {% else %}
+                            {# Opción 4: Fallback #}
+                            <div class="map-placeholder">
+                                {{ item.barrio.nombre }}
+                            </div>
+                        {% endif %}
+
+                        <div class="match-badge"
+                            style="background-color: {% if item.match_ratio > 80 %}#10b981{% elif item.match_ratio > 50 %}#3b82f6{% else %}#f59e0b{% endif %};">
                             {{ item.match_ratio }}%
                         </div>
                     </div>
 
                     <div class="card-body">
                         <h3 class="card-title">{{ item.barrio.nombre }}</h3>
-                        
+
                         <!-- Tags -->
                         <div class="mb-3">
-                            {% if item.barrio.tiene_naturaleza %}
-                                <span class="badge-tag nature"><i class="fas fa-tree"></i> Naturaleza</span>
-                            {% endif %}
-                            {% if item.barrio.es_accesible %}
-                                <span class="badge-tag accessible"><i class="fas fa-wheelchair"></i> Accesible</span>
-                            {% endif %}
+                            <!-- Naturaleza ahora se muestra como métrica numérica, no como tag -->
                         </div>
 
                         <!-- Justificación -->
@@ -185,70 +413,669 @@
                             {{ item.justificacion }}
                         </div>
 
-                        <!-- Estadísticas -->
-                        <div class="stats-container">
-                            <!-- Seguridad -->
+                        <!-- Estadísticas - Mostrar solo las métricas que el usuario configuró -->
+                        <div class="stats-container" data-barrio-id="{{ forloop.counter }}">
+                            <!-- Mostrar primeras 4 métricas -->
+                            {% for metric in metrics_list|slice:"4:" %}
                             <div class="stat-row">
                                 <div class="stat-label">
-                                    <span><i class="fas fa-shield-alt text-secondary"></i> Seguridad</span>
-                                    <span>{{ item.barrio.scores.seguridad }}/10</span>
+                                    <span>{{ item.barrio.scores|get_item:metric.key }}/10</span>
                                 </div>
                                 <div class="progress">
-                                    <div class="progress-bar bg-danger" style="width: {{ item.barrio.scores.seguridad }}0%"></div>
+                                    <div class="progress-bar {{ metric.color }}"
+                                        role="progressbar"
+                                        style="width: {{ item.barrio.scores|get_item:metric.key|mul:10 }}%"
+                                        aria-valuenow="{{ item.barrio.scores|get_item:metric.key }}"
+                                        aria-valuemin="0" 
+                                        aria-valuemax="10">
+                                    </div>
                                 </div>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Métricas adicionales (ocultas por defecto) -->
+                            {% if metrics_list|length > 4 %}
+                            <div class="additional-stats" id="additional-stats-{{ forloop.counter }}"
+                                style="display: none;">
+                                {% for metric in metrics_list|slice:"4:" %}
+                                <div class="stat-row">
+                                    <div class="stat-label">
+                                        <span><i class="{{ metric.icon }} text-secondary"></i> {{ metric.label }}</span>
+                                        <span>{{ item.barrio.scores|get_item:metric.key }}/10</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar {{ metric.color }}" 
+                                             role="progressbar"
+                                             style="width: {% widthratio item.barrio.scores|get_item:metric.key 1 10 %}%"
+                                             aria-valuenow="{{ item.barrio.scores|get_item:metric.key }}"
+                                             aria-valuemin="0" 
+                                             aria-valuemax="10">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
 
-                            <!-- Cultura -->
-                            <div class="stat-row">
-                                <div class="stat-label">
-                                    <span><i class="fas fa-theater-masks text-secondary"></i> Cultura</span>
-                                    <span>{{ item.barrio.scores.cultura }}/10</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-warning" style="width: {{ item.barrio.scores.cultura }}0%"></div>
-                                </div>
+                            <div class="text-center mt-3" onclick="event.stopPropagation();">
+                                <button class="btn-toggle-stats btn-sm"
+                                    data-target="additional-stats-{{ forloop.counter }}"
+                                    onclick="toggleStats(this, event); return false;"
+                                    style="background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); padding: 6px 20px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; transition: all 0.3s;">
+                                    <i class="fas fa-chevron-down"></i> Ver más métricas
+                                </button>
                             </div>
-                            
-                            <!-- Bici -->
-                            <div class="stat-row">
-                                <div class="stat-label">
-                                    <span><i class="fas fa-bicycle text-secondary"></i> Bici Friendly</span>
-                                    <span>{{ item.barrio.scores.bici }}/10</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-success" style="width: {{ item.barrio.scores.bici }}0%"></div>
-                                </div>
-                            </div>
-
-                             <!-- Vida Nocturna -->
-                             <div class="stat-row">
-                                <div class="stat-label">
-                                    <span><i class="fas fa-glass-cheers text-secondary"></i> Ocio Nocturno</span>
-                                    <span>{{ item.barrio.scores.vida_nocturna }}/10</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-primary" style="width: {{ item.barrio.scores.vida_nocturna }}0%"></div>
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
-            {% empty %}
+            {% endfor %}
+            {% else %}
             <div class="col-12 text-center py-5">
                 <div class="text-muted">
                     <i class="fas fa-search fa-3x mb-3"></i>
                     <h4>No hemos encontrado coincidencias.</h4>
-                    <p>Tus filtros son muy estrictos. Prueba a relajar la exigencia de "Accesibilidad" o "Presupuesto".</p>
-                    <a href="/" class="btn btn-primary mt-3">Ajustar Filtros</a>
+                    <p>Tus filtros son muy estrictos. Prueba a relajar la exigencia de "Presupuesto" o "Seguridad".</p>
+                    <a href="{% url 'formulario' %}" class="btn btn-primary mt-3">Ajustar Filtros</a>
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}
         </div>
-        
-        <div class="text-center mt-5">
-            <a href="/" class="btn btn-back"><i class="fas fa-arrow-left me-2"></i> Volver al Buscador</a>
+
+        <div class="text-center mt-5 mb-5">
+            <a href="{% url 'formulario' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                <span>Volver al Formulario</span>
+            </a>
+            {% if resultados and barrios_url %}
+            <a href="{% url 'index' %}?barrios={{ barrios_url|urlencode }}" class="btn-modern ms-3">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Ver en Mapa</span>
+            </a>
+            {% else %}
+            <a href="{% url 'index' %}" class="btn-back ms-3">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Ver Mapa</span>
+            </a>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Modal de Detalles del Barrio -->
+    <div class="modal fade" id="barrioDetailsModal" tabindex="-1" aria-labelledby="barrioDetailsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-details">
+            <div class="modal-content">
+                <div class="modal-header"
+                    style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%); color: white; border-bottom: none;">
+                    <h2 class="modal-title" id="barrioDetailsModalLabel" style="font-weight: 700; margin: 0;">Detalles
+                        del Barrio</h2>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <h3 id="barrioName" style="font-weight: 700; margin-bottom: 8px; color: var(--text-dark);"></h3>
+                    <p style="color: var(--secondary-color); margin-bottom: 30px; font-size: 0.95rem;">Neighborhood
+                        Council</p>
+
+                    <h4 style="font-weight: 700; margin-bottom: 20px; color: var(--text-dark);">📊 Mètriques per a
+                        recomanacions:</h4>
+
+                    <div id="barrioMetrics">
+                        <!-- Las métricas se cargarán aquí con JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e2e8f0; padding: 20px 30px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Función para expandir/colapsar métricas adicionales
+        function toggleStats(button, event) {
+            // Prevenir que el evento se propague y abra el modal
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+
+            const targetId = button.getAttribute('data-target');
+            if (!targetId) {
+                console.error('No se encontró data-target en el botón');
+                return;
+            }
+
+            const additionalStats = document.getElementById(targetId);
+            if (!additionalStats) {
+                console.error('No se encontró el elemento con id:', targetId);
+                return;
+            }
+
+            const icon = button.querySelector('i');
+            if (!icon) {
+                console.error('No se encontró el icono en el botón');
+                return;
+            }
+
+            const isHidden = additionalStats.style.display === 'none' ||
+                additionalStats.style.display === '' ||
+                window.getComputedStyle(additionalStats).display === 'none';
+
+            if (isHidden) {
+                additionalStats.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                button.innerHTML = '<i class="fas fa-chevron-up"></i> Ver menos métricas';
+            } else {
+                additionalStats.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                button.innerHTML = '<i class="fas fa-chevron-down"></i> Ver más métricas';
+            }
+        }
+
+        function showBarrioDetails(nombre) {
+            // Buscar la carta que contiene los datos
+            const cards = document.querySelectorAll('.result-card');
+            let metrics = {};
+
+            cards.forEach(card => {
+                if (card.getAttribute('data-barrio-name') === nombre) {
+                    const metricsJson = card.getAttribute('data-barrio-metrics');
+                    if (metricsJson && metricsJson !== '{}') {
+                        try {
+                            // Decodificar HTML entities si es necesario
+                            const decoded = metricsJson.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+                            metrics = JSON.parse(decoded);
+                            console.log('Métricas cargadas para', nombre, ':', Object.keys(metrics).length, 'métricas');
+                        } catch (e) {
+                            console.error('Error parsing metrics para', nombre, ':', e);
+                            console.error('JSON recibido:', metricsJson.substring(0, 200));
+                            metrics = {};
+                        }
+                    } else {
+                        console.warn('No hay métricas para', nombre);
+                    }
+                }
+            });
+
+            // Si no hay métricas, intentar cargarlas desde el servidor
+            if (Object.keys(metrics).length === 0) {
+                console.log('Cargando métricas desde el servidor para', nombre);
+                fetch(`/api/neighborhood/${encodeURIComponent(nombre)}/metrics`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.metrics) {
+                            metrics = data.metrics;
+                            displayMetrics(nombre, metrics);
+                        } else {
+                            console.error('No se pudieron cargar las métricas');
+                            document.getElementById('barrioMetrics').innerHTML = '<p style="color: #dc2626;">No se pudieron cargar las métricas del barrio.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cargando métricas:', error);
+                        document.getElementById('barrioMetrics').innerHTML = '<p style="color: #dc2626;">Error al cargar las métricas del barrio.</p>';
+                    });
+                return;
+            }
+
+            displayMetrics(nombre, metrics);
+        }
+
+        function displayMetrics(nombre, metrics) {
+            // Actualizar nombre del barrio
+            document.getElementById('barrioName').textContent = nombre;
+
+            // Formatear y mostrar métricas
+            const metricsContainer = document.getElementById('barrioMetrics');
+            metricsContainer.innerHTML = '';
+
+            // Función para formatear porcentajes
+            function formatPercent(value) {
+                if (typeof value === 'number') {
+                    return Math.round(value * 100) + '%';
+                }
+                return value;
+            }
+
+            // Función para formatear valores de seguridad
+            function formatSafety(value) {
+                if (value >= 0.8) return 'Alta (' + formatPercent(value) + ')';
+                if (value >= 0.5) return 'Media (' + formatPercent(value) + ')';
+                return 'Baja (' + formatPercent(value) + ')';
+            }
+
+            // Obtener scores normalizados del CSV (0-10) desde metrics.normalized_scores
+            // Estos son los mismos que se muestran en el preview
+            const normalizedScores = metrics.normalized_scores || {};
+
+            // Función para obtener score normalizado (0-10)
+            function getNormalizedScore(scoreKey) {
+                if (scoreKey && normalizedScores[scoreKey] !== undefined) {
+                    return normalizedScores[scoreKey];
+                }
+                return null;
+            }
+
+            // Función para formatear valores numéricos
+            function formatNumber(value) {
+                if (typeof value === 'number') {
+                    if (value % 1 === 0) return value;
+                    return value.toFixed(2);
+                }
+                return value || 0;
+            }
+
+            // Función para calcular densidad (por población)
+            // Usar population_census en lugar de population (que fue eliminado)
+            function getDensity(value, population) {
+                if (!population || population === 0) {
+                    // Si no hay población, mostrar solo el valor absoluto
+                    return (value || 0).toFixed(0);
+                }
+                return ((value || 0) / population * 1000).toFixed(2); // por 1000 habitantes
+            }
+
+            // Obtener población (usar population_census)
+            function getPopulation() {
+                return metrics.population_census || 0;
+            }
+
+            // Función para formatear densidad con unidad
+            function formatDensity(value, population) {
+                if (!population || population === 0) {
+                    return `${value || 0}`;
+                }
+                const density = getDensity(value, population);
+                return `${value || 0} (${density}/1000 hab.)`;
+            }
+
+            // Definir métricas organizadas por categorías con datos originales del JSON
+            // Mostrar los datos que se usaron para calcular los scores del CSV
+            const metricCategories = {
+                'economia': {
+                    label: '💰 Economía y Coste de Vida',
+                    metrics: [
+                        {
+                            key: 'presupuesto',
+                            label: 'Presupuesto / Coste de Vida',
+                            icon: '💵',
+                            scoreKey: 'presupuesto',
+                            format: () => {
+                                const score = getNormalizedScore('presupuesto');
+                                const rent = metrics.median_rent || 0;
+                                const homeValue = metrics.median_home_value || 0;
+                                let info = [];
+                                if (rent > 0) info.push(`Alquiler mediano: $${rent.toLocaleString()}`);
+                                if (homeValue > 0) info.push(`Valor vivienda: $${homeValue.toLocaleString()}`);
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.presupuesto !== undefined || metrics.median_rent !== undefined
+                        }
+                    ]
+                },
+                'seguridad': {
+                    label: '🛡️ Seguridad',
+                    metrics: [
+                        {
+                            key: 'seguridad',
+                            label: 'Seguridad',
+                            icon: '🛡️',
+                            scoreKey: 'seguridad',
+                            format: () => {
+                                const score = getNormalizedScore('seguridad');
+                                const safety = formatNumber(metrics.safety);
+                                const crimes = metrics.total_crimes || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (safety > 0) info.push(`Percepción: ${(safety * 100).toFixed(0)}%`);
+                                if (crimes > 0) {
+                                    if (pop > 0) {
+                                        const crimesPerCapita = (crimes / pop * 1000).toFixed(2);
+                                        info.push(`Crímenes: ${crimes} (${crimesPerCapita}/1000 hab.)`);
+                                    } else {
+                                        info.push(`Crímenes: ${crimes}`);
+                                    }
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.seguridad !== undefined || metrics.safety !== undefined
+                        }
+                    ]
+                },
+                'movilidad': {
+                    label: '🚶 Movilidad y Transporte',
+                    metrics: [
+                        {
+                            key: 'caminabilidad',
+                            label: 'Caminabilidad',
+                            icon: '🚶',
+                            scoreKey: 'caminabilidad',
+                            format: () => {
+                                const score = getNormalizedScore('caminabilidad');
+                                const density = metrics.density || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (density > 0 && pop > 0) {
+                                    const area = pop / density;
+                                    info.push(`Área estimada: ${area.toFixed(2)} km²`);
+                                    info.push(`Densidad: ${density.toFixed(2)} hab/km²`);
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.caminabilidad !== undefined || metrics.density !== undefined
+                        },
+                        {
+                            key: 'transporte',
+                            label: 'Transporte Público',
+                            icon: '🚌',
+                            scoreKey: 'transporte',
+                            format: () => {
+                                const score = getNormalizedScore('transporte');
+                                const stops = metrics.public_transport_stops || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (stops > 0) {
+                                    info.push(`Paradas: ${stops}`);
+                                    if (pop > 0) {
+                                        const density = getDensity(stops, pop);
+                                        info.push(`${density}/1000 hab.`);
+                                    }
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.transporte !== undefined || metrics.public_transport_stops !== undefined
+                        }
+                    ]
+                },
+                'ocio': {
+                    label: '🎭 Ocio y Cultura',
+                    metrics: [
+                        {
+                            key: 'vida_nocturna',
+                            label: 'Vida Nocturna',
+                            icon: '🌙',
+                            scoreKey: 'vida_nocturna',
+                            format: () => {
+                                const score = getNormalizedScore('vida_nocturna');
+                                const bars = metrics.bars || 0;
+                                const nightclubs = metrics.nightclubs || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (bars > 0) {
+                                    if (pop > 0) {
+                                        const barsDensity = getDensity(bars, pop);
+                                        info.push(`Bares: ${bars} (${barsDensity}/1000 hab.)`);
+                                    } else {
+                                        info.push(`Bares: ${bars}`);
+                                    }
+                                }
+                                if (nightclubs > 0) {
+                                    if (pop > 0) {
+                                        const clubsDensity = getDensity(nightclubs, pop);
+                                        info.push(`Clubs: ${nightclubs} (${clubsDensity}/1000 hab.)`);
+                                    } else {
+                                        info.push(`Clubs: ${nightclubs}`);
+                                    }
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.vida_nocturna !== undefined || metrics.bars !== undefined || metrics.nightclubs !== undefined
+                        },
+                        {
+                            key: 'cultura',
+                            label: 'Vida Cultural',
+                            icon: '🎨',
+                            scoreKey: 'cultura',
+                            format: () => {
+                                const score = getNormalizedScore('cultura');
+                                const museums = metrics.museums || 0;
+                                const theatres = metrics.theatres || 0;
+                                const cinemas = metrics.cinemas || 0;
+                                let info = [];
+                                if (museums > 0) info.push(`Museos: ${museums}`);
+                                if (theatres > 0) info.push(`Teatros: ${theatres}`);
+                                if (cinemas > 0) info.push(`Cines: ${cinemas}`);
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.cultura !== undefined || metrics.museums !== undefined || metrics.theatres !== undefined
+                        }
+                    ]
+                },
+                'naturaleza': {
+                    label: '🌳 Naturaleza y Espacios Verdes',
+                    metrics: [
+                        {
+                            key: 'naturaleza',
+                            label: 'Naturaleza',
+                            icon: '🌳',
+                            scoreKey: 'naturaleza',
+                            format: () => {
+                                const score = getNormalizedScore('naturaleza');
+                                const parks = metrics.parks_google_places || 0;
+                                const density = metrics.density || 0.00001;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (parks > 0) {
+                                    info.push(`Parques: ${parks}`);
+                                    if (density > 0 && pop > 0) {
+                                        const area = pop / density;
+                                        const parksPerArea = (parks / area * 1000000).toFixed(2);
+                                        info.push(`${parksPerArea} parcs/km²`);
+                                    }
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.naturaleza !== undefined || metrics.parks_google_places !== undefined
+                        }
+                    ]
+                },
+                'actividad': {
+                    label: '🏙️ Actividad y Bullicio',
+                    metrics: [
+                        {
+                            key: 'actividad',
+                            label: 'Nivel de Actividad',
+                            icon: '🏙️',
+                            scoreKey: 'actividad',
+                            format: () => {
+                                const score = getNormalizedScore('actividad');
+                                const density = metrics.density || 0;
+                                const shops = metrics.shops || 0;
+                                const supermarkets = metrics.supermarkets || 0;
+                                const localBusinesses = metrics.local_businesses || 0;
+                                const restaurants = metrics.restaurants || 0;
+                                const cafes = metrics.cafes_google_places || 0;
+                                let info = [];
+                                if (density > 0) info.push(`Densidad: ${density.toFixed(2)} hab/km²`);
+                                const totalComercios = shops + supermarkets + localBusinesses;
+                                if (totalComercios > 0) info.push(`Comercios: ${totalComercios} (Tiendas: ${shops}, Supermercados: ${supermarkets}, Locales: ${localBusinesses})`);
+                                const totalHosteleria = restaurants + cafes;
+                                if (totalHosteleria > 0) info.push(`Hostelería: ${totalHosteleria} (Restaurantes: ${restaurants}, Cafés: ${cafes})`);
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.actividad !== undefined || metrics.density !== undefined
+                        }
+                    ]
+                },
+                'servicios': {
+                    label: '🏥 Servicios de Salud',
+                    metrics: [
+                        {
+                            key: 'farmacias',
+                            label: 'Farmacias',
+                            icon: '💊',
+                            scoreKey: 'farmacias',
+                            format: () => {
+                                const score = getNormalizedScore('farmacias');
+                                const pharm = metrics.pharmacies || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (pharm > 0) {
+                                    info.push(`Total: ${pharm}`);
+                                    if (pop > 0) {
+                                        const density = getDensity(pharm, pop);
+                                        info.push(`${density}/1000 hab.`);
+                                    }
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.farmacias !== undefined || metrics.pharmacies !== undefined
+                        },
+                        {
+                            key: 'hospitales',
+                            label: 'Hospitales',
+                            icon: '🏥',
+                            scoreKey: 'hospitales',
+                            format: () => {
+                                const score = getNormalizedScore('hospitales');
+                                const hosp = metrics.hospitals || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (hosp > 0) {
+                                    info.push(`Total: ${hosp}`);
+                                    if (pop > 0) {
+                                        const density = getDensity(hosp, pop);
+                                        info.push(`${density}/1000 hab.`);
+                                    }
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.hospitales !== undefined || metrics.hospitals !== undefined
+                        }
+                    ]
+                },
+                'educacion': {
+                    label: '🎓 Educación',
+                    metrics: [
+                        {
+                            key: 'educacion',
+                            label: 'Educación',
+                            icon: '🎓',
+                            scoreKey: 'educacion',
+                            format: () => {
+                                const score = getNormalizedScore('educacion');
+                                const schools = metrics.schools || 0;
+                                const universities = metrics.universities || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (schools > 0) {
+                                    info.push(`Escuelas: ${schools}`);
+                                    if (pop > 0) {
+                                        const density = getDensity(schools, pop);
+                                        info.push(`${density}/1000 hab.`);
+                                    }
+                                }
+                                if (universities > 0) {
+                                    info.push(`Universidades: ${universities}`);
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.educacion !== undefined || metrics.schools !== undefined || metrics.universities !== undefined
+                        }
+                    ]
+                },
+                'demografia': {
+                    label: '👥 Demografía',
+                    metrics: [
+                        {
+                            key: 'edad_demografica',
+                            label: 'Ambiente Demográfico',
+                            icon: '👥',
+                            scoreKey: 'edad_demografica',
+                            format: () => {
+                                const score = getNormalizedScore('edad_demografica');
+                                const medianAge = metrics.median_age || 0;
+                                const pop = getPopulation();
+                                let info = [];
+                                if (medianAge) {
+                                    const age = typeof medianAge === 'string' ? parseFloat(medianAge) : medianAge;
+                                    info.push(`Edad mediana: ${age.toFixed(1)} años`);
+                                }
+                                if (pop > 0) {
+                                    info.push(`Población: ${pop.toLocaleString()}`);
+                                }
+                                const infoStr = info.length > 0 ? info.join(' | ') : '';
+                                return score !== null ? `${score}/10${infoStr ? ' - ' + infoStr : ''}` : (infoStr || 'N/A');
+                            },
+                            show: () => normalizedScores.edad_demografica !== undefined || metrics.median_age !== undefined
+                        }
+                    ]
+                }
+            };
+
+            // Crear estructura organizada por categorías
+            Object.keys(metricCategories).forEach(categoryKey => {
+                const category = metricCategories[categoryKey];
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'metric-category';
+                categoryDiv.style.marginBottom = '25px';
+
+                const categoryTitle = document.createElement('h5');
+                categoryTitle.textContent = category.label;
+                categoryTitle.style.fontWeight = '700';
+                categoryTitle.style.marginBottom = '15px';
+                categoryTitle.style.color = 'var(--text-dark)';
+                categoryTitle.style.borderBottom = '2px solid var(--primary-color)';
+                categoryTitle.style.paddingBottom = '8px';
+                categoryDiv.appendChild(categoryTitle);
+
+                category.metrics.forEach(def => {
+                    if (def.show && def.show()) {
+                        const metricItem = document.createElement('div');
+                        metricItem.className = 'metric-item';
+                        metricItem.style.marginBottom = '12px';
+                        metricItem.style.padding = '10px';
+                        metricItem.style.backgroundColor = '#f8f9fa';
+                        metricItem.style.borderRadius = '8px';
+
+                        const formattedValue = def.format();
+
+                        metricItem.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 1.5rem;">${def.icon}</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">${def.label}</div>
+                                    <div style="color: var(--secondary-color); font-size: 0.9rem;">${formattedValue}</div>
+                                </div>
+                            </div>
+                        `;
+
+                        categoryDiv.appendChild(metricItem);
+                    }
+                });
+
+                // Solo agregar la categoría si tiene métricas visibles
+                if (categoryDiv.children.length > 1) {
+                    metricsContainer.appendChild(categoryDiv);
+                }
+            });
+
+            // Si no hay métricas, mostrar mensaje
+            if (metricsContainer.children.length === 0) {
+                metricsContainer.innerHTML = '<p style="color: #dc2626;">No hay métricas disponibles para este barrio.</p>';
+            }
+
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('barrioDetailsModal'));
+            modal.show();
+        }
+    </script>
 </body>
+
 </html>

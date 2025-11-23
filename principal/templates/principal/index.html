@@ -1,0 +1,909 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Joc de Barris - Recomanacions per Clients de Joc de Trons</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div style="text-align: center;">
+                <h1>🗺️ El Joc de Barris</h1>
+                <p class="subtitle">Troba el barri perfecte per als teus clients de Joc de Trons amb intel·ligència
+                    artificial i dades reals</p>
+                <div style="margin-top: 24px;">
+                    <a href="{% url 'formulario' %}" class="btn-modern">
+                        <i class="fas fa-user-edit"></i>
+                        <span>Formulario Personalizado</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Client Selector -->
+        <div class="client-selector">
+            <h2>Selecciona un Client</h2>
+            <div class="clients-grid" id="clientsGrid">
+                <p>Carregant clients...</p>
+            </div>
+        </div>
+
+        <!-- Recommendations Panel -->
+        <div class="recommendations-panel" id="recommendationsPanel" style="display: none;">
+            <h2 id="clientName">Recomanacions</h2>
+            <p id="clientDescription" class="client-description"></p>
+            <div id="recommendationsList" class="recommendations-list"></div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel" id="infoPanel">
+            <h3>Informació del Barri</h3>
+            <div id="neighborhoodInfo">
+                <p>Selecciona un client i després fes clic en un barri al mapa per veure informació</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hasApiKey = {% if api_key %}true{% else %} false{% endif %};
+        let map;
+        let neighborhoods = [];
+        let infoWindow;
+        let selectedClient = null;
+        let recommendations = [];
+        const unmappedMarkers = [];
+        const recommendationMarkers = [];
+
+        // Definir initMap en el scope global
+        window.initMap = function () {
+            console.log('🚀 Inicialitzant mapa...');
+
+            if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                console.error('❌ Google Maps no està carregat');
+                document.getElementById('map').innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f; background: #ffebee; border-radius: 5px; margin: 20px;"><h3>❌ Error carregant Google Maps</h3><p>Verifica la teva connexió a internet i que la API key sigui vàlida.</p></div>';
+                return;
+            }
+
+            console.log('✅ Google Maps carregat correctament');
+
+            const laCenter = { lat: 34.0522, lng: -118.2437 };
+
+            try {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: laCenter,
+                    zoom: 11,
+                    mapTypeId: 'roadmap'
+                });
+                console.log('✅ Mapa creat correctament');
+            } catch (error) {
+                console.error('❌ Error creant el mapa:', error);
+                return;
+            }
+
+            infoWindow = new google.maps.InfoWindow();
+
+            // Carregar dades
+            loadGeoJSON().then(() => {
+                loadCrimesByNeighborhood();
+                loadUnmappedNeighborhoods();
+                loadClients();
+
+                // Verificar si hay barrios recomendados en la URL
+                checkRecommendedNeighborhoods();
+            });
+        }
+
+        // Carregar clients
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/clients');
+                const data = await response.json();
+
+                if (!data.success || !data.clients) {
+                    console.warn('⚠️  No hi ha clients disponibles');
+                    return;
+                }
+
+                const grid = document.getElementById('clientsGrid');
+                grid.innerHTML = '';
+
+                data.clients.forEach((client, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'client-card fade-in';
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.onclick = () => selectClient(client.type);
+                    card.innerHTML = `
+                        <h3>${client.name}</h3>
+                        <p>${client.description}</p>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('❌ Error carregant clients:', error);
+            }
+        }
+
+        // Seleccionar client
+        async function selectClient(clientType) {
+            selectedClient = clientType;
+
+            // Actualitzar UI amb animació
+            document.querySelectorAll('.client-card').forEach((card, index) => {
+                card.classList.remove('selected');
+                if (card.textContent.includes(clientType) || card.onclick.toString().includes(clientType)) {
+                    setTimeout(() => {
+                        card.classList.add('selected');
+                    }, index * 50);
+                }
+            });
+
+            // Carregar recomanacions
+            try {
+                const response = await fetch(`/api/recommendations/${clientType}?top_n=5`);
+                const data = await response.json();
+
+                if (!data.success || !data.recommendations) {
+                    console.warn('⚠️  No hi ha recomanacions disponibles');
+                    return;
+                }
+
+                recommendations = data.recommendations;
+
+                // Mostrar panel de recomanacions
+                document.getElementById('clientName').textContent = data.client.name;
+                document.getElementById('clientDescription').textContent = data.client.description;
+                document.getElementById('recommendationsPanel').style.display = 'block';
+
+                // Mostrar recomanacions
+                displayRecommendations(data.recommendations);
+
+                // Destacar barris recomanats al mapa
+                highlightRecommendedNeighborhoods(data.recommendations);
+
+                // Scroll suau al panell de recomanacions
+                setTimeout(() => {
+                    const panel = document.getElementById('recommendationsPanel');
+                    if (panel) {
+                        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 300);
+
+            } catch (error) {
+                console.error('❌ Error carregant recomanacions:', error);
+            }
+        }
+
+        // Mostrar recomanacions
+        function displayRecommendations(recs) {
+            const list = document.getElementById('recommendationsList');
+            list.innerHTML = '';
+
+            recs.forEach((rec, index) => {
+                const item = document.createElement('div');
+                item.className = 'recommendation-item fade-in';
+                item.style.animationDelay = `${index * 0.1}s`;
+
+                // Calcular color del badge según el score
+                let badgeColor = 'var(--warning-color)';
+                if (rec.score >= 0.8) badgeColor = 'var(--success-color)';
+                else if (rec.score >= 0.6) badgeColor = 'var(--primary-color)';
+
+                item.innerHTML = `
+                    <div class="recommendation-header">
+                        <h3>#${index + 1} ${rec.neighborhood}</h3>
+                        <div class="score-badge" style="background: linear-gradient(135deg, ${badgeColor} 0%, ${badgeColor}dd 100%);">
+                            ${(rec.score * 100).toFixed(0)}%
+                        </div>
+                    </div>
+                    <div class="justification-text">${rec.justification_text.replace(/\n/g, '<br>')}</div>
+                    <button class="view-on-map-btn" onclick="focusNeighborhood('${rec.neighborhood}')">
+                        <i class="fas fa-map-marker-alt"></i> Veure al mapa
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Destacar barris recomanats
+        function highlightRecommendedNeighborhoods(recs) {
+            // Netejar marcadors anteriors
+            recommendationMarkers.forEach(marker => marker.setMap(null));
+            recommendationMarkers.length = 0;
+
+            // Destacar cada barri recomanat
+            recs.forEach((rec, index) => {
+                const neighborhood = neighborhoods.find(n => n.name === rec.neighborhood);
+                if (neighborhood) {
+                    // Canviar color del polígon
+                    const intensity = rec.score;
+                    const color = `rgb(${Math.floor(255 * (1 - intensity))}, ${Math.floor(255 * intensity)}, 0)`;
+
+                    neighborhood.polygon.setOptions({
+                        fillColor: color,
+                        fillOpacity: 0.6,
+                        strokeColor: color,
+                        strokeWeight: 3
+                    });
+
+                    // Afegir marcador amb número
+                    const bounds = new google.maps.LatLngBounds();
+                    const paths = neighborhood.polygon.getPath();
+                    paths.forEach(path => bounds.extend(path));
+
+                    const center = bounds.getCenter();
+                    const marker = new google.maps.Marker({
+                        position: center,
+                        map: map,
+                        label: {
+                            text: `#${index + 1}`,
+                            color: '#FFFFFF',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
+                        },
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 20,
+                            fillColor: '#FF5722',
+                            fillOpacity: 0.9,
+                            strokeColor: '#FFFFFF',
+                            strokeWeight: 2
+                        }
+                    });
+
+                    recommendationMarkers.push(marker);
+                }
+            });
+        }
+
+        // Enfocar barri al mapa
+        function focusNeighborhood(neighborhoodName) {
+            const neighborhood = neighborhoods.find(n => n.name === neighborhoodName);
+            if (neighborhood) {
+                const bounds = new google.maps.LatLngBounds();
+                const paths = neighborhood.polygon.getPath();
+                paths.forEach(path => bounds.extend(path));
+                map.fitBounds(bounds);
+                map.setZoom(Math.min(map.getZoom(), 14));
+            }
+        }
+
+        // Verificar si hay barrios recomendados en la URL y marcarlos
+        function checkRecommendedNeighborhoods() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const barriosParam = urlParams.get('barrios');
+
+            if (barriosParam) {
+                const barriosNames = barriosParam.split(',').map(name => decodeURIComponent(name.trim()));
+                console.log('📍 Barrios recomendados desde formulario:', barriosNames);
+
+                // Esperar a que los neighborhoods estén cargados
+                setTimeout(() => {
+                    highlightRecommendedNeighborhoodsFromForm(barriosNames);
+                }, 1000);
+            }
+        }
+
+        // Destacar barrios recomendados desde el formulario
+        function highlightRecommendedNeighborhoodsFromForm(barriosNames) {
+            // Netejar marcadors anteriors
+            recommendationMarkers.forEach(marker => marker.setMap(null));
+            recommendationMarkers.length = 0;
+
+            const bounds = new google.maps.LatLngBounds();
+            let foundCount = 0;
+
+            // Destacar cada barri recomanat
+            barriosNames.forEach((barrioName, index) => {
+                const neighborhood = neighborhoods.find(n => n.name === barrioName);
+                if (neighborhood) {
+                    foundCount++;
+
+                    // Canviar color del polígon a un color destacado (verde/azul)
+                    const color = '#2563eb'; // Azul para barrios recomendados del formulario
+
+                    neighborhood.polygon.setOptions({
+                        fillColor: color,
+                        fillOpacity: 0.4,
+                        strokeColor: color,
+                        strokeWeight: 4,
+                        zIndex: 1000
+                    });
+
+                    // Calcular centro del barrio individual
+                    const barrioBounds = new google.maps.LatLngBounds();
+                    const paths = neighborhood.polygon.getPath();
+                    paths.forEach(path => {
+                        barrioBounds.extend(path);
+                        bounds.extend(path); // También añadir al bounds total
+                    });
+
+                    const center = barrioBounds.getCenter();
+
+                    // Afegir marcador amb número
+                    const marker = new google.maps.Marker({
+                        position: center,
+                        map: map,
+                        label: {
+                            text: `#${index + 1}`,
+                            color: '#FFFFFF',
+                            fontSize: '16px',
+                            fontWeight: 'bold'
+                        },
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 25,
+                            fillColor: '#2563eb',
+                            fillOpacity: 0.9,
+                            strokeColor: '#FFFFFF',
+                            strokeWeight: 3
+                        },
+                        title: `#${index + 1} ${barrioName}`,
+                        zIndex: 1000 + index
+                    });
+
+                    // Añadir info window al marcador
+                    marker.addListener('click', () => {
+                        infoWindow.setContent(`
+                            <div class="info-window">
+                                <h3>${barrioName}</h3>
+                                <p><strong>Recomendado #${index + 1}</strong></p>
+                                <p><em>Barrio recomendado desde el formulario personalizado</em></p>
+                            </div>
+                        `);
+                        infoWindow.open(map, marker);
+                    });
+
+                    recommendationMarkers.push(marker);
+                } else {
+                    console.warn(`⚠️  Barrio no encontrado: ${barrioName}`);
+                }
+            });
+
+            // Ajustar zoom para mostrar todos los barrios recomendados
+            if (foundCount > 0) {
+                map.fitBounds(bounds);
+                // Asegurar un zoom mínimo para que se vean bien
+                google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+                    if (map.getZoom() > 13) {
+                        map.setZoom(13);
+                    }
+                });
+
+                // Mostrar mensaje informativo
+                const infoPanel = document.getElementById('infoPanel');
+                if (infoPanel) {
+                    infoPanel.innerHTML = `
+                        <h3>Barrios Recomendados</h3>
+                        <div id="neighborhoodInfo">
+                            <p><strong>Se han marcado ${foundCount} barrios recomendados en el mapa:</strong></p>
+                            <ul style="text-align: left; margin-top: 10px;">
+                                ${barriosNames.map((name, idx) => `<li>#${idx + 1} ${name}</li>`).join('')}
+                            </ul>
+                            <p style="margin-top: 15px; color: #2563eb;">
+                                <i class="fas fa-info-circle"></i> Haz clic en los marcadores numerados para más información
+                            </p>
+                        </div>
+                    `;
+                    infoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                console.warn('⚠️  No se encontraron barrios recomendados en el mapa');
+            }
+        }
+
+        // Funció per carregar barris no mapejats
+        async function loadUnmappedNeighborhoods() {
+            try {
+                console.log('📍 Carregant barris no mapejats...');
+                const response = await fetch('/api/unmapped-neighborhoods');
+                const data = await response.json();
+
+                if (!data.success || !data.neighborhoods || Object.keys(data.neighborhoods).length === 0) {
+                    console.warn('⚠️  No hi ha dades de barris no mapejats disponibles');
+                    return;
+                }
+
+                console.log(`✅ ${Object.keys(data.neighborhoods).length} barris no mapejats amb coordenades`);
+
+                Object.entries(data.neighborhoods).forEach(([name, coords]) => {
+                    if (coords.lat && coords.lon) {
+                        const marker = new google.maps.Marker({
+                            position: { lat: coords.lat, lng: coords.lon },
+                            map: map,
+                            title: `${name} (No mapejat)`,
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 8,
+                                fillColor: '#FF9800',
+                                fillOpacity: 0.8,
+                                strokeColor: '#F57C00',
+                                strokeWeight: 2
+                            },
+                            label: {
+                                text: '?',
+                                color: '#FFFFFF',
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                            }
+                        });
+
+                        const markerInfoWindow = new google.maps.InfoWindow({
+                            content: `
+                                <div class="info-window">
+                                    <h3>${name}</h3>
+                                    <p><em>⚠️ Barri no mapejat</em></p>
+                                    <p>Aquest barri del LA Times no està mapejat a cap Neighborhood Council.</p>
+                                </div>
+                            `
+                        });
+
+                        marker.addListener('click', () => {
+                            markerInfoWindow.open(map, marker);
+                        });
+
+                        unmappedMarkers.push(marker);
+                    }
+                });
+
+            } catch (error) {
+                console.error('❌ Error carregant barris no mapejats:', error);
+            }
+        }
+
+        async function loadCrimesByNeighborhood() {
+            try {
+                console.log('📊 Carregant crims per barri...');
+                const response = await fetch('/api/crimes-by-neighborhood');
+                const data = await response.json();
+
+                if (data.error || !data.success || !data.neighborhoods) {
+                    console.warn('⚠️  No hi ha dades de crims disponibles');
+                    return;
+                }
+
+                console.log(`✅ Crims carregats per ${Object.keys(data.neighborhoods).length} barris`);
+
+                const maxCrimes = Math.max(...Object.values(data.neighborhoods).map(n => n.total_crimes));
+
+                neighborhoods.forEach(n => {
+                    const crimeData = data.neighborhoods[n.name];
+                    if (crimeData) {
+                        const crimeCount = crimeData.total_crimes;
+                        const intensity = crimeCount / maxCrimes;
+                        const red = Math.floor(255 * intensity);
+                        const green = Math.floor(255 * (1 - intensity));
+                        const blue = 100;
+
+                        // Només aplicar color si no hi ha recomanació seleccionada
+                        if (!selectedClient) {
+                            n.polygon.setOptions({
+                                fillColor: `rgb(${red}, ${green}, ${blue})`,
+                                fillOpacity: 0.4 + (intensity * 0.3),
+                                strokeColor: `rgb(${red}, ${green}, ${blue})`,
+                                strokeWeight: 2 + intensity
+                            });
+                        }
+
+                        const clickHandler = n.polygon.addListener('click', async (event) => {
+                            await showNeighborhoodInfo(n.name, n.properties, crimeData);
+
+                            let laTimesHtml = '';
+                            try {
+                                const response = await fetch(`/api/neighborhood/${encodeURIComponent(n.name)}/la-times-neighborhoods`);
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    if (data.la_times_neighborhoods && data.la_times_neighborhoods.length > 0) {
+                                        laTimesHtml = `<p><strong>📋 Barris del LA Times:</strong> ${data.la_times_neighborhoods.slice(0, 5).join(', ')}${data.la_times_neighborhoods.length > 5 ? ` (+${data.la_times_neighborhoods.length - 5} més)` : ''}</p>`;
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn('Error carregant barris del LA Times:', error);
+                            }
+
+                            // Carregar mètriques rellevants per a recomanacions
+                            let metricsHtml = '';
+                            try {
+                                const response = await fetch(`/api/neighborhood/${encodeURIComponent(n.name)}/metrics`);
+                                if (response.ok) {
+                                    const metricsData = await response.json();
+                                    if (metricsData.success && metricsData.metrics) {
+                                        const m = metricsData.metrics;
+                                        metricsHtml = `<p><strong>📊 Mètriques:</strong></p><ul>`;
+                                        if (m.walkability !== undefined) {
+                                            metricsHtml += `<li>🚶 Caminabilitat: ${(m.walkability * 100).toFixed(0)}%</li>`;
+                                        }
+                                        if (m.restaurants !== undefined && m.restaurants > 0) {
+                                            metricsHtml += `<li>🍽️ Restaurants: ${m.restaurants}</li>`;
+                                        }
+                                        // Mostrar nombre real de parcs i ratio d'espais verds
+                                        let parksCount = m.parks_count !== undefined ? m.parks_count : 0;
+                                        // Si parks_count no existeix, intentar recuperar de parks
+                                        if (parksCount === 0 && m.parks !== undefined) {
+                                            // Si parks és un enter >= 1, usar-lo
+                                            if (m.parks >= 1 && Number.isInteger(m.parks)) {
+                                                parksCount = m.parks;
+                                            }
+                                            // Si parks és un valor normalitzat molt petit, és 0
+                                            else if (m.parks < 0.01) {
+                                                parksCount = 0;
+                                            }
+                                        }
+                                        // Mostrar parcs amb ratio si està disponible
+                                        if (parksCount >= 1) {
+                                            let parksInfo = `🌳 Parcs: ${parksCount}`;
+                                            if (m.parks_ratio !== undefined) {
+                                                parksInfo += ` (${m.parks_ratio.toFixed(0)}% espais verds)`;
+                                            } else if (parksCount > 0) {
+                                                // Calcular ratio aproximat si no està definit (basat en nombre de parcs)
+                                                let ratio = 0;
+                                                if (parksCount >= 50) ratio = 100;
+                                                else if (parksCount >= 20) ratio = 80 + ((parksCount - 20) / 30) * 20;
+                                                else if (parksCount >= 10) ratio = 60 + ((parksCount - 10) / 10) * 20;
+                                                else if (parksCount >= 5) ratio = 40 + ((parksCount - 5) / 5) * 20;
+                                                else if (parksCount >= 1) ratio = 20 + ((parksCount - 1) / 4) * 20;
+                                                parksInfo += ` (${ratio.toFixed(0)}% espais verds)`;
+                                            }
+                                            metricsHtml += `<li>${parksInfo}</li>`;
+                                        }
+                                        if (m.safety !== undefined) {
+                                            const safety = (m.safety * 100).toFixed(0);
+                                            let safetyLabel = 'Baixa';
+                                            if (m.safety >= 0.7) safetyLabel = 'Alta';
+                                            else if (m.safety >= 0.4) safetyLabel = 'Mitjana';
+                                            metricsHtml += `<li>🛡️ Seguretat: ${safetyLabel} (${safety}%)</li>`;
+                                        }
+                                        if (m.public_transport_stops !== undefined && m.public_transport_stops > 0) {
+                                            metricsHtml += `<li>🚌 Transport: ${m.public_transport_stops} parades</li>`;
+                                        }
+                                        metricsHtml += `</ul>`;
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn('Error carregant mètriques:', error);
+                            }
+
+                            infoWindow.setContent(`
+                                <div class="info-window">
+                                    <h3>${n.name}</h3>
+                                    <p><em>Neighborhood Council</em></p>
+                                    ${laTimesHtml}
+                                    ${metricsHtml}
+                                    <p><strong>Àrea:</strong> ${n.properties.Shape__Area ? (n.properties.Shape__Area / 1000000).toFixed(2) + ' km²' : 'N/A'}</p>
+                                </div>
+                            `);
+                            infoWindow.setPosition(event.latLng);
+                            infoWindow.open(map);
+                        });
+                        n.polygon.set('clickHandler', clickHandler);
+                    }
+                });
+
+            } catch (error) {
+                console.error('❌ Error carregant crims:', error);
+            }
+        }
+
+        async function loadGeoJSON() {
+            try {
+                console.log('📊 Carregant GeoJSON...');
+                const response = await fetch('/api/geojson');
+                const data = await response.json();
+
+                if (data.error) {
+                    console.error('❌ Error:', data.error);
+                    return;
+                }
+
+                console.log(`✅ GeoJSON carregat: ${data.features.length} features`);
+
+                let processed = 0;
+                let skipped = 0;
+
+                data.features.forEach(feature => {
+                    const name = feature.properties.Name || 'Sense nom';
+                    const geometry = feature.geometry;
+
+                    if (geometry.type === 'Polygon') {
+                        const paths = geometry.coordinates[0].map(coord => ({
+                            lat: coord[1],
+                            lng: coord[0]
+                        }));
+
+                        const polygon = new google.maps.Polygon({
+                            paths: paths,
+                            strokeColor: '#4285F4',
+                            strokeOpacity: 0.8,
+                            strokeWeight: 2,
+                            fillColor: '#4285F4',
+                            fillOpacity: 0.15,
+                            map: map
+                        });
+
+                        polygon.addListener('click', async (event) => {
+                            await showNeighborhoodInfo(name, feature.properties);
+
+                            let laTimesHtml = '';
+                            try {
+                                const response = await fetch(`/api/neighborhood/${encodeURIComponent(name)}/la-times-neighborhoods`);
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    if (data.la_times_neighborhoods && data.la_times_neighborhoods.length > 0) {
+                                        laTimesHtml = `<p><strong>📋 Barris del LA Times:</strong> ${data.la_times_neighborhoods.slice(0, 5).join(', ')}${data.la_times_neighborhoods.length > 5 ? ` (+${data.la_times_neighborhoods.length - 5} més)` : ''}</p>`;
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn('Error carregant barris del LA Times:', error);
+                            }
+
+                            infoWindow.setContent(`
+                                <div class="info-window">
+                                    <h3>${name}</h3>
+                                    <p><em>Neighborhood Council</em></p>
+                                    ${laTimesHtml}
+                                    <p><strong>Àrea:</strong> ${feature.properties.Shape__Area ? (feature.properties.Shape__Area / 1000000).toFixed(2) + ' km²' : 'N/A'}</p>
+                                </div>
+                            `);
+                            infoWindow.setPosition(event.latLng);
+                            infoWindow.open(map);
+                        });
+
+                        neighborhoods.push({
+                            name: name,
+                            polygon: polygon,
+                            properties: feature.properties
+                        });
+                        processed++;
+                    } else if (geometry.type === 'MultiPolygon') {
+                        geometry.coordinates.forEach(polygonCoords => {
+                            const paths = polygonCoords[0].map(coord => ({
+                                lat: coord[1],
+                                lng: coord[0]
+                            }));
+
+                            const polygon = new google.maps.Polygon({
+                                paths: paths,
+                                strokeColor: '#4285F4',
+                                strokeOpacity: 0.8,
+                                strokeWeight: 2,
+                                fillColor: '#4285F4',
+                                fillOpacity: 0.15,
+                                map: map
+                            });
+
+                            polygon.addListener('click', async (event) => {
+                                await showNeighborhoodInfo(name, feature.properties);
+
+                                infoWindow.setContent(`
+                                    <div class="info-window">
+                                        <h3>${name}</h3>
+                                        <p><em>Neighborhood Council</em></p>
+                                        <p><strong>Tipus:</strong> MultiPolygon</p>
+                                        <p><strong>Àrea:</strong> ${feature.properties.Shape__Area ? (feature.properties.Shape__Area / 1000000).toFixed(2) + ' km²' : 'N/A'}</p>
+                                    </div>
+                                `);
+                                infoWindow.setPosition(event.latLng);
+                                infoWindow.open(map);
+                            });
+
+                            neighborhoods.push({
+                                name: name,
+                                polygon: polygon,
+                                properties: feature.properties
+                            });
+                        });
+                        processed++;
+                    } else {
+                        skipped++;
+                    }
+                });
+
+                console.log(`✅ Processats: ${processed} barris, Omesos: ${skipped}`);
+
+                if (neighborhoods.length > 0) {
+                    const bounds = new google.maps.LatLngBounds();
+                    neighborhoods.forEach(n => {
+                        const paths = n.polygon.getPath();
+                        paths.forEach(path => bounds.extend(path));
+                    });
+                    map.fitBounds(bounds);
+                }
+
+                return Promise.resolve();
+
+            } catch (error) {
+                console.error('❌ Error carregant GeoJSON:', error);
+                return Promise.reject(error);
+            }
+        }
+
+        async function showNeighborhoodInfo(name, properties, crimeData = null) {
+            const infoDiv = document.getElementById('neighborhoodInfo');
+            if (!infoDiv) {
+                console.error('❌ Element neighborhoodInfo no trobat');
+                return;
+            }
+
+            // Mostrar carregant
+            infoDiv.innerHTML = `<p>Carregant informació de ${name}...</p>`;
+
+            let html = `<h4>${name}</h4>`;
+            html += `<p><em>Neighborhood Council</em></p>`;
+
+            // Carregar mètriques rellevants per a recomanacions (no detalls de crims)
+            try {
+                const response = await fetch(`/api/neighborhood/${encodeURIComponent(name)}/metrics`);
+                if (response.ok) {
+                    const metricsData = await response.json();
+                    if (metricsData.success && metricsData.metrics) {
+                        const m = metricsData.metrics;
+                        html += `<p><strong>📊 Mètriques per a recomanacions:</strong></p>`;
+                        html += `<ul>`;
+                        if (m.walkability !== undefined) {
+                            html += `<li>🚶 Caminabilitat: ${(m.walkability * 100).toFixed(0)}%</li>`;
+                        }
+                        if (m.restaurants !== undefined && m.restaurants > 0) {
+                            html += `<li>🍽️ Restaurants: ${m.restaurants}</li>`;
+                        }
+                        // Mostrar nombre real de parcs i ratio d'espais verds
+                        let parksCount = m.parks_count !== undefined ? m.parks_count : 0;
+                        // Si parks_count no existeix, intentar recuperar de parks
+                        if (parksCount === 0 && m.parks !== undefined) {
+                            // Si parks és un enter >= 1, usar-lo
+                            if (m.parks >= 1 && Number.isInteger(m.parks)) {
+                                parksCount = m.parks;
+                            }
+                            // Si parks és un valor normalitzat molt petit, és 0
+                            else if (m.parks < 0.01) {
+                                parksCount = 0;
+                            }
+                        }
+                        // Mostrar parcs amb ratio si està disponible
+                        if (parksCount >= 1) {
+                            let parksInfo = `🌳 Parcs: ${parksCount}`;
+                            if (m.parks_ratio !== undefined) {
+                                parksInfo += ` (${m.parks_ratio.toFixed(0)}% espais verds)`;
+                            } else if (parksCount > 0) {
+                                // Calcular ratio aproximat si no està definit (basat en nombre de parcs)
+                                let ratio = 0;
+                                if (parksCount >= 50) ratio = 100;
+                                else if (parksCount >= 20) ratio = 80 + ((parksCount - 20) / 30) * 20;
+                                else if (parksCount >= 10) ratio = 60 + ((parksCount - 10) / 10) * 20;
+                                else if (parksCount >= 5) ratio = 40 + ((parksCount - 5) / 5) * 20;
+                                else if (parksCount >= 1) ratio = 20 + ((parksCount - 1) / 4) * 20;
+                                parksInfo += ` (${ratio.toFixed(0)}% espais verds)`;
+                            }
+                            html += `<li>${parksInfo}</li>`;
+                        }
+                        if (m.safety !== undefined) {
+                            const safety = (m.safety * 100).toFixed(0);
+                            let safetyLabel = 'Baixa';
+                            if (m.safety >= 0.7) safetyLabel = 'Alta';
+                            else if (m.safety >= 0.4) safetyLabel = 'Mitjana';
+                            html += `<li>🛡️ Seguretat: ${safetyLabel} (${safety}%)</li>`;
+                        }
+                        if (m.public_transport_stops !== undefined && m.public_transport_stops > 0) {
+                            html += `<li>🚌 Transport públic: ${m.public_transport_stops} parades</li>`;
+                        }
+                        // Mostrar gimnasios y cultura si están disponibles
+                        if (m.gyms !== undefined && m.gyms > 0) {
+                            html += `<li>🏋️ Gimnasios: ${m.gyms}</li>`;
+                        }
+                        if (m.theatres !== undefined && m.theatres > 0) {
+                            html += `<li>🎭 Teatros: ${m.theatres}</li>`;
+                        }
+                        if (m.cinemas !== undefined && m.cinemas > 0) {
+                            html += `<li>🎬 Cines: ${m.cinemas}</li>`;
+                        }
+                        if (m.museums !== undefined && m.museums > 0) {
+                            html += `<li>🏛️ Museos: ${m.museums}</li>`;
+                        }
+                        if (m.cultural_life !== undefined && m.cultural_life > 0) {
+                            html += `<li>🎨 Vida cultural: ${(m.cultural_life * 100).toFixed(0)}%</li>`;
+                        }
+                        // FASE 1: Nuevos datos de Google Places
+                        if (m.schools !== undefined && m.schools > 0) {
+                            html += `<li>🎓 Escuelas: ${m.schools}</li>`;
+                        }
+                        if (m.universities !== undefined && m.universities > 0) {
+                            html += `<li>🏫 Universidades: ${m.universities}</li>`;
+                        }
+                        if (m.bars !== undefined && m.bars > 0) {
+                            html += `<li>🍸 Bares: ${m.bars}</li>`;
+                        }
+                        if (m.nightclubs !== undefined && m.nightclubs > 0) {
+                            html += `<li>🎉 Discotecas: ${m.nightclubs}</li>`;
+                        }
+                        if (m.nightlife !== undefined && m.nightlife > 0) {
+                            html += `<li>🌙 Vida nocturna: ${(m.nightlife * 100).toFixed(0)}%</li>`;
+                        }
+                        if (m.pharmacies !== undefined && m.pharmacies > 0) {
+                            html += `<li>💊 Farmacias: ${m.pharmacies}</li>`;
+                        }
+                        if (m.hospitals !== undefined && m.hospitals > 0) {
+                            html += `<li>🏥 Hospitales: ${m.hospitals}</li>`;
+                        }
+                        if (m.supermarkets !== undefined && m.supermarkets > 0) {
+                            html += `<li>🛒 Supermercados: ${m.supermarkets}</li>`;
+                        }
+                        if (m.car_dealers !== undefined && m.car_dealers > 0) {
+                            html += `<li>🚗 Concesionarios: ${m.car_dealers}</li>`;
+                        }
+                        if (m.car_repair !== undefined && m.car_repair > 0) {
+                            html += `<li>🔧 Talleres: ${m.car_repair}</li>`;
+                        }
+                        if (m.gas_stations !== undefined && m.gas_stations > 0) {
+                            html += `<li>⛽ Gasolineras: ${m.gas_stations}</li>`;
+                        }
+                        html += `</ul>`;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error carregant mètriques:', error);
+                html += `<p style="color: red;">⚠️ Error carregant mètriques: ${error.message}</p>`;
+            }
+
+            if (properties && properties.Shape__Area) {
+                html += `<p><strong>Àrea:</strong> ${(properties.Shape__Area / 1000000).toFixed(2)} km²</p>`;
+            }
+
+            // Assegurar que el panel estigui visible
+            const infoPanel = document.getElementById('infoPanel');
+            if (infoPanel) {
+                infoPanel.style.display = 'block';
+                infoPanel.style.visibility = 'visible';
+            }
+
+            // Actualitzar el contingut
+            infoDiv.innerHTML = html;
+            console.log(`✅ Informació actualitzada per a ${name}`, html.substring(0, 100) + '...');
+
+            // Scroll al panel si està fora de vista
+            if (infoPanel) {
+                infoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        window.gm_authFailure = function () {
+            console.error('❌ Error d\'autenticació amb Google Maps API');
+            const mapElement = document.getElementById('map');
+            if (mapElement) {
+                mapElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f; background: #ffebee; border-radius: 5px; margin: 20px;"><h3>❌ Error amb Google Maps API</h3><p>La API key no és vàlida o ha expirat.</p></div>';
+            }
+        };
+
+        setTimeout(() => {
+            if (typeof map === 'undefined' && hasApiKey) {
+                console.error('❌ initMap no s\'ha executat');
+                const mapElement = document.getElementById('map');
+                if (mapElement) {
+                    mapElement.innerHTML = '<div style="padding: 20px; text-align: center; color: #d32f2f; background: #ffebee; border-radius: 5px; margin: 20px;"><h3>⚠️ Error inicialitzant el mapa</h3><p>Obre la consola del navegador (F12) per veure més detalls.</p></div>';
+                }
+            }
+        }, 5000);
+    </script>
+
+    {% if api_key %}
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&callback=initMap" async defer></script>
+    {% else %}
+    <script>
+        console.error('⚠️ Google Maps API Key no configurada');
+        document.getElementById('map').innerHTML = '<div style="padding: 20px; text-align: center; color: #666;"><h3>⚠️ API Key de Google Maps no configurada</h3><p>Configura GOOGLE_MAPS_API_KEY al fitxer .env</p></div>';
+    </script>
+    {% endif %}
+</body>
+
+</html>

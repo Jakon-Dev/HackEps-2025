@@ -1,14 +1,17 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Barrios - LA Finder</title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
     <style>
         :root {
             --primary-color: #2563eb;
@@ -30,27 +33,63 @@
             padding: 40px 0;
             margin-bottom: 40px;
             border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        h1 { font-weight: 700; color: #0f172a; letter-spacing: -0.5px; }
-        h4 { font-weight: 600; font-size: 1.1rem; color: #334155; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        h1 {
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3rem);
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h4 {
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: #334155;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
         /* Modern Cards */
         .feature-card {
             background: var(--card-bg);
             border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 24px;
+            border-radius: 16px;
+            padding: 28px;
             height: 100%;
-            transition: all 0.2s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
         }
 
         .feature-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             border-color: var(--accent-color);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
         }
 
         /* Sliders */
@@ -79,8 +118,13 @@
             font-size: 0.85rem;
         }
 
-        .form-select, .form-control { border-radius: 8px; padding: 10px; border-color: #cbd5e1; }
-        
+        .form-select,
+        .form-control {
+            border-radius: 8px;
+            padding: 10px;
+            border-color: #cbd5e1;
+        }
+
         .btn-modern {
             background-color: var(--primary-color);
             color: white;
@@ -91,41 +135,88 @@
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
             transition: all 0.2s;
         }
-        .btn-modern:hover { background-color: #1d4ed8; transform: translateY(-1px); }
-        .helper-text { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+
+        .btn-modern:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .helper-text {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .alert-error {
+            background-color: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
+
 <body>
 
     <header class="header-section">
         <div class="container text-center">
-            <h1><i class="fas fa-map-marked-alt text-primary"></i> L.A. Neighborhood Finder</h1>
-            <p class="text-secondary mt-2">Configura tus preferencias para encontrar el barrio perfecto.</p>
+            <h1 class="text-gradient"><i class="fas fa-map-marked-alt"></i> L.A. Neighborhood Finder</h1>
+            <p class="text-secondary mt-3" style="font-size: 1.125rem; max-width: 600px; margin: 0 auto;">Configura tus
+                preferencias para encontrar el barrio perfecto usando inteligencia artificial y datos reales</p>
         </div>
     </header>
 
     <div class="container">
-        <form method="POST" action="">
+        {% if error %}
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <a href="{% url 'index' %}" class="back-link">
+            <i class="fas fa-arrow-left me-2"></i>Volver al mapa de personajes
+        </a>
+
+        <form method="POST" action="{% url 'formulario_resultados' %}" id="recommendationForm"
+            onsubmit="return validateForm()">
             {% csrf_token %}
 
             <div class="row g-4">
-                
+
                 <!-- 1. Perfil y Economía -->
                 <div class="col-md-6">
                     <div class="feature-card">
                         <h4><i class="fas fa-user-circle text-secondary"></i> Perfil y Economía</h4>
                         <p class="helper-text mb-4">Datos básicos del solicitante.</p>
 
-                        <!-- EDAD (NUEVO) -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Tu Edad</label>
-                            <input type="number" class="form-control" name="edad" min="18" max="100" value="30" required>
-                            <div class="helper-text">Usaremos esto para recomendar zonas con demografía similar.</div>
+                            <label class="range-label">Presupuesto / Nivel Económico <span id="val-presupuesto"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="1" max="10" value="5" name="presupuesto"
+                                oninput="updateVal(this, 'val-presupuesto')">
                         </div>
 
                         <div class="mb-4">
-                            <label class="range-label">Presupuesto / Nivel Económico <span id="val-presupuesto" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="1" max="10" value="5" name="presupuesto" oninput="updateVal(this, 'val-presupuesto')">
+                            <label class="range-label">Nivel de Actividad/Bullicio <span id="val-actividad"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="actividad"
+                                oninput="updateVal(this, 'val-actividad')">
+                            <div class="helper-text">
+                                <small>0-3: Muy tranquilo | 4-6: Equilibrado | 7-10: Muy activo/urbano</small>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -146,11 +237,13 @@
                         <p class="helper-text mb-4">Criminalidad (Data LAPD) y aislamiento.</p>
 
                         <div class="mb-4">
-                            <label class="range-label">Prioridad de Seguridad <span id="val-seguridad" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="seguridad" oninput="updateVal(this, 'val-seguridad')">
+                            <label class="range-label">Prioridad de Seguridad <span id="val-seguridad"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="seguridad"
+                                oninput="updateVal(this, 'val-seguridad')">
                         </div>
-                        
-                         <div class="form-check form-switch mt-3">
+
+                        <div class="form-check form-switch mt-3">
                             <input class="form-check-input" type="checkbox" id="privacidad" name="privacidad">
                             <label class="form-check-label fw-bold" for="privacidad">
                                 🔒 Priorizar Privacidad (Aislamiento)
@@ -159,40 +252,48 @@
                     </div>
                 </div>
 
-                <!-- 3. Sanidad (NUEVO) -->
+                <!-- 3. Sanidad -->
                 <div class="col-md-6">
                     <div class="feature-card">
                         <h4><i class="fas fa-heartbeat text-danger"></i> Sanidad y Salud</h4>
                         <p class="helper-text mb-4">Proximidad a servicios médicos esenciales.</p>
 
                         <div class="mb-4">
-                            <label class="range-label">Proximidad a Farmacias <span id="val-farmacia" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="farmacias" oninput="updateVal(this, 'val-farmacia')">
+                            <label class="range-label">Proximidad a Farmacias <span id="val-farmacia"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="farmacias"
+                                oninput="updateVal(this, 'val-farmacia')">
                         </div>
 
                         <div class="mb-3">
-                            <label class="range-label">Proximidad a Hospitales <span id="val-hospital" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="hospitales" oninput="updateVal(this, 'val-hospital')">
+                            <label class="range-label">Proximidad a Hospitales <span id="val-hospital"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="hospitales"
+                                oninput="updateVal(this, 'val-hospital')">
                             <div class="helper-text">Importante para urgencias o tratamientos frecuentes.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. Educación (NUEVO) -->
+                <!-- 4. Educación -->
                 <div class="col-md-6">
                     <div class="feature-card">
                         <h4><i class="fas fa-graduation-cap text-primary"></i> Educación</h4>
                         <p class="helper-text mb-4">Centros educativos y ambiente académico.</p>
 
                         <div class="mb-4">
-                            <label class="range-label">Escuelas y Colegios <span id="val-escuela" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="escuelas" oninput="updateVal(this, 'val-escuela')">
+                            <label class="range-label">Escuelas y Colegios <span id="val-escuela"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="escuelas"
+                                oninput="updateVal(this, 'val-escuela')">
                             <div class="helper-text">Educación primaria y secundaria.</div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="range-label">Universidades y Campus <span id="val-uni" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="universidades" oninput="updateVal(this, 'val-uni')">
+                            <label class="range-label">Universidades y Campus <span id="val-uni"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="universidades"
+                                oninput="updateVal(this, 'val-uni')">
                         </div>
                     </div>
                 </div>
@@ -205,25 +306,38 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="range-label">Vida Nocturna <span id="val-fiesta" class="badge-value">5</span></label>
-                                <input type="range" class="form-range" min="0" max="10" value="5" name="vida_nocturna" oninput="updateVal(this, 'val-fiesta')">
+                                <label class="range-label">Vida Nocturna <span id="val-fiesta"
+                                        class="badge-value">5</span></label>
+                                <input type="range" class="form-range" min="0" max="10" value="5" name="vida_nocturna"
+                                    oninput="updateVal(this, 'val-fiesta')">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="range-label">Oferta Cultural <span id="val-cultura" class="badge-value">5</span></label>
-                                <input type="range" class="form-range" min="0" max="10" value="5" name="cultura" oninput="updateVal(this, 'val-cultura')">
+                                <label class="range-label">Oferta Cultural <span id="val-cultura"
+                                        class="badge-value">5</span></label>
+                                <input type="range" class="form-range" min="0" max="10" value="5" name="cultura"
+                                    oninput="updateVal(this, 'val-cultura')">
                             </div>
                         </div>
 
                         <div class="mb-3 pt-2 border-top">
-                            <label class="range-label">Nivel de Silencio <span id="val-silencio" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="silencio" oninput="updateVal(this, 'val-silencio')">
+                            <label class="range-label">Ambiente Demográfico <span id="val-edad"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="edad_demografica"
+                                oninput="updateVal(this, 'val-edad')">
+                            <div class="helper-text">
+                                <small>0-3: Barrio joven/vibrante | 4-6: Mixto | 7-10: Barrio maduro/tranquilo</small>
+                            </div>
                         </div>
 
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="naturaleza" name="naturaleza">
-                            <label class="form-check-label fw-bold" for="naturaleza">
-                                🌲 Zonas Verdes / Mascotas
-                            </label>
+                        <div class="mb-4">
+                            <label class="range-label">Naturaleza y Zonas Verdes <span id="val-naturaleza"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="naturaleza"
+                                oninput="updateVal(this, 'val-naturaleza')">
+                            <div class="helper-text">
+                                <small>0-3: Sin zonas verdes | 4-6: Algunas zonas verdes | 7-10: Muchas zonas verdes y
+                                    parques</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -235,33 +349,44 @@
                         <p class="helper-text mb-4">Conectividad urbana.</p>
 
                         <div class="mb-3">
-                            <label class="range-label">Walkability (A pie) <span id="val-pie" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="caminabilidad" oninput="updateVal(this, 'val-pie')">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="range-label">Transporte Público <span id="val-trans" class="badge-value">5</span></label>
-                            <input type="range" class="form-range" min="0" max="10" value="5" name="transporte" oninput="updateVal(this, 'val-trans')">
+                            <label class="range-label">Walkability (A pie) <span id="val-pie"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="caminabilidad"
+                                oninput="updateVal(this, 'val-pie')">
                         </div>
 
-                        <div class="alert alert-light border mt-2 d-flex align-items-center">
-                            <input class="form-check-input me-3" type="checkbox" id="accesibilidad" name="accesibilidad" style="width: 20px; height: 20px;">
-                            <div>
-                                <label class="form-check-label fw-bold text-dark" for="accesibilidad">
-                                    ♿ Accesibilidad Universal
-                                </label>
-                            </div>
+                        <div class="mb-3">
+                            <label class="range-label">Transporte Público <span id="val-trans"
+                                    class="badge-value">5</span></label>
+                            <input type="range" class="form-range" min="0" max="10" value="5" name="transporte"
+                                oninput="updateVal(this, 'val-trans')">
                         </div>
+
+
                     </div>
                 </div>
 
             </div>
 
-            <div class="text-center mt-5">
-                <button type="submit" class="btn btn-modern">
-                    <i class="fas fa-search me-2"></i> Calcular Recomendación
+            <div class="text-center mt-5 mb-5">
+                <button type="submit" class="btn-modern" id="submitBtn" style="font-size: 1.1rem; padding: 16px 40px;">
+                    <i class="fas fa-search"></i>
+                    <span id="submitText">Calcular Recomendación</span>
                 </button>
+                <div id="loadingSpinner" class="mt-3" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Procesando tus preferencias...</p>
+                </div>
             </div>
+
+            {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
 
         </form>
     </div>
@@ -271,6 +396,52 @@
         function updateVal(slider, outputId) {
             document.getElementById(outputId).innerText = slider.value;
         }
+
+        // Validación del formulario
+        function validateForm() {
+            const form = document.getElementById('recommendationForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Validar que todos los sliders estén en rango válido (0-10)
+            const sliders = form.querySelectorAll('input[type="range"]');
+            let isValid = true;
+            let errorMessage = '';
+
+            for (let slider of sliders) {
+                const value = parseInt(slider.value);
+                if (isNaN(value) || value < 0 || value > 10) {
+                    isValid = false;
+                    errorMessage = `El valor de "${slider.previousElementSibling?.textContent || slider.name}" debe estar entre 0 y 10.`;
+                    break;
+                }
+            }
+
+            if (!isValid) {
+                alert('❌ Error de validación:\n\n' + errorMessage);
+                return false;
+            }
+
+            // Mostrar loading state
+            submitBtn.disabled = true;
+            submitText.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Procesando...';
+            loadingSpinner.style.display = 'block';
+
+            // Permitir envío del formulario
+            return true;
+        }
+
+        // Prevenir doble envío
+        let formSubmitted = false;
+        document.getElementById('recommendationForm').addEventListener('submit', function (e) {
+            if (formSubmitted) {
+                e.preventDefault();
+                return false;
+            }
+            formSubmitted = true;
+        });
     </script>
 </body>
+
 </html>

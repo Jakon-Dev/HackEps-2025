@@ -1,0 +1,789 @@
+/* ============================================
+   SISTEMA DE DISEÑO PREMIUM - LA FINDER
+   Matrícula de Honor - Diseño Profesional
+   ============================================ */
+
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #3b82f6;
+    --primary-dark: #1e40af;
+    --secondary-color: #64748b;
+    --bg-color: #f8fafc;
+    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --card-bg: #ffffff;
+    --accent-color: #3b82f6;
+    --text-dark: #0f172a;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-primary: 0 10px 25px -5px rgba(37, 99, 235, 0.3);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-dark);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   TIPOGRAFÍA PREMIUM
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: var(--text-dark);
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+h1 { 
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+h2 { 
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+}
+
+h3 { 
+    font-size: clamp(1.5rem, 3vw, 1.875rem);
+    font-weight: 600;
+}
+
+h4 { 
+    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-weight: 600;
+}
+
+p {
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+/* ============================================
+   CONTENEDOR PRINCIPAL
+   ============================================ */
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* ============================================
+   HEADER PREMIUM
+   ============================================ */
+
+header {
+    background: var(--card-bg);
+    padding: 60px 0 40px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light), var(--primary-color));
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+header h1 {
+    text-align: center;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: clamp(1rem, 2vw, 1.125rem);
+    margin-bottom: 24px;
+    font-weight: 400;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ============================================
+   BOTONES PREMIUM
+   ============================================ */
+
+.btn-modern {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 14px 28px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-modern:hover::before {
+    left: 100%;
+}
+
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-primary);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-modern:active {
+    transform: translateY(0);
+}
+
+.btn-back {
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card-bg);
+}
+
+.btn-back:hover {
+    background: var(--text-dark);
+    color: white;
+    border-color: var(--text-dark);
+    text-decoration: none;
+    transform: translateX(-4px);
+}
+
+.view-on-map-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+}
+
+.view-on-map-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-primary);
+}
+
+/* ============================================
+   CARDS PREMIUM
+   ============================================ */
+
+.feature-card, .client-card, .recommendation-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before, .client-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+.feature-card:hover::before, .client-card:hover::before {
+    transform: scaleX(1);
+}
+
+.feature-card:hover, .client-card:hover, .recommendation-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+}
+
+.client-card {
+    cursor: pointer;
+    position: relative;
+}
+
+.client-card::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.client-card.selected::after {
+    background: var(--success-color);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+}
+
+.client-card.selected {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    box-shadow: var(--shadow-primary);
+    transform: translateY(-2px);
+}
+
+.client-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    font-size: 1.375rem;
+    transition: color 0.3s ease;
+}
+
+.client-card:hover h3 {
+    color: var(--primary-light);
+}
+
+/* ============================================
+   SELECTOR DE CLIENTES
+   ============================================ */
+
+.client-selector {
+    padding: 48px 32px;
+    background: linear-gradient(180deg, var(--bg-color) 0%, var(--card-bg) 100%);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.client-selector h2 {
+    margin-bottom: 32px;
+    color: var(--text-dark);
+    text-align: center;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.clients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   PANEL DE RECOMENDACIONES
+   ============================================ */
+
+.recommendations-panel {
+    padding: 48px 32px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-light);
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.recommendations-panel h2 {
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.client-description {
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    font-size: 1.125rem;
+    line-height: 1.7;
+    font-style: italic;
+    text-align: center;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px;
+    background: var(--bg-color);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary-color);
+}
+
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.recommendation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.recommendation-header h3 {
+    color: var(--text-dark);
+    font-size: 1.5rem;
+    margin: 0;
+    flex: 1;
+    min-width: 200px;
+}
+
+.score-badge {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    box-shadow: var(--shadow-md);
+    min-width: 80px;
+    text-align: center;
+}
+
+.justification-text {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    padding: 16px;
+    background: var(--bg-color);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--primary-color);
+}
+
+.justification-text strong {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+/* ============================================
+   MAPA PREMIUM
+   ============================================ */
+
+.map-container {
+    height: 650px;
+    width: 100%;
+    position: relative;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+.map-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    z-index: 1;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+    border-radius: 0;
+}
+
+/* ============================================
+   PANEL DE INFORMACIÓN PREMIUM
+   ============================================ */
+
+.info-panel {
+    padding: 40px 32px;
+    background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg-color) 100%);
+    border-top: 1px solid var(--border-light);
+}
+
+.info-panel h3 {
+    color: var(--text-dark);
+    margin-bottom: 20px;
+    font-size: 1.75rem;
+    text-align: center;
+}
+
+#neighborhoodInfo {
+    background: var(--card-bg);
+    padding: 28px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+    max-width: 800px;
+    margin: 0 auto;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#neighborhoodInfo h4 {
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#neighborhoodInfo h4::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    border-radius: 2px;
+}
+
+#neighborhoodInfo p {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.7;
+    font-size: 1rem;
+}
+
+#neighborhoodInfo ul {
+    margin-left: 24px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+#neighborhoodInfo li {
+    margin-bottom: 8px;
+    position: relative;
+}
+
+#neighborhoodInfo li::marker {
+    color: var(--primary-color);
+}
+
+/* ============================================
+   INFO WINDOW (Google Maps)
+   ============================================ */
+
+.info-window {
+    max-width: 320px;
+    font-family: 'Inter', sans-serif;
+    padding: 4px;
+}
+
+.info-window h3 {
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.info-window p {
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.info-window strong {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.info-window ul {
+    margin-left: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.info-window li {
+    margin-bottom: 6px;
+}
+
+/* ============================================
+   FORMULARIOS PREMIUM
+   ============================================ */
+
+.form-select, .form-control {
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+input[type=range] {
+    accent-color: var(--primary-color);
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 10px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type=range]:hover {
+    accent-color: var(--primary-light);
+}
+
+.range-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-dark);
+}
+
+.badge-value {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    color: var(--primary-color);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.helper-text {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+.alert-error {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border: 2px solid #fca5a5;
+    color: #991b1b;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ============================================
+   LOADING STATES PREMIUM
+   ============================================ */
+
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+/* ============================================
+   SCROLLBAR PERSONALIZADO
+   ============================================ */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-light);
+}
+
+/* ============================================
+   RESPONSIVE PREMIUM
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .container {
+        padding: 0 20px;
+    }
+    
+    header {
+        padding: 48px 0 32px;
+    }
+    
+    .client-selector, .recommendations-panel, .info-panel {
+        padding: 40px 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 16px;
+    }
+    
+    header {
+        padding: 40px 0 28px;
+    }
+    
+    .clients-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .map-container {
+        height: 450px;
+    }
+    
+    .recommendation-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .client-selector, .recommendations-panel, .info-panel {
+        padding: 32px 20px;
+    }
+    
+    .feature-card, .client-card, .recommendation-item {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.25rem; }
+    
+    .btn-modern {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+/* ============================================
+   UTILIDADES PREMIUM
+   ============================================ */
+
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.shadow-primary {
+    box-shadow: var(--shadow-primary);
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.slide-up {
+    animation: fadeInUp 0.6s ease-out;
+}
